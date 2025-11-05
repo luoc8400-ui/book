@@ -368,11 +368,11 @@
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
   }
 
-  // 从站点加载 files.json（列出站点目录可用的 TXT）
+  // 读取站点清单并渲染列表
   async function loadManifest() {
     try {
-      const res = await fetch('./files.json');
-      if (!res.ok) throw new Error('no manifest');
+      const res = await fetch('./files.json', { cache: 'no-cache' });
+      if (!res.ok) throw new Error('manifest not found');
       const files = await res.json();
       state.sameOriginFiles = Array.isArray(files) ? files.filter(n => /\.txt$/i.test(n)) : [];
       renderFileList();
@@ -385,22 +385,23 @@
     }
   }
 
-  // 渲染列表（合并本地选择与站点文件）
   function renderFileList() {
+    if (!els.fileList) return;
     els.fileList.innerHTML = '';
-    const items = [];
-    state.localFiles.forEach(f => items.push({ type: 'local', name: f.name, file: f.file }));
-    state.sameOriginFiles.forEach(name => items.push({ type: 'sameOrigin', name, path: `./${encodeURI(name)}` }));
+    const items = state.sameOriginFiles.map(name => ({
+      name,
+      path: `./${encodeURI(name)}`
+    }));
 
     if (!items.length) {
-      const empty = document.createElement('li');
-      empty.className = 'list-item';
-      empty.textContent = '暂无可用 TXT。请选择本地文件或点击“刷新列表”。';
-      els.fileList.appendChild(empty);
+      const li = document.createElement('li');
+      li.className = 'list-item';
+      li.textContent = '暂无可用 TXT。请在仓库根添加 files.json 或上传 TXT。';
+      els.fileList.appendChild(li);
       return;
     }
 
-    items.forEach((it) => {
+    items.forEach(it => {
       const li = document.createElement('li');
       li.className = 'list-item';
 
@@ -410,29 +411,26 @@
 
       const srcEl = document.createElement('span');
       srcEl.className = 'src';
-      srcEl.textContent = it.type === 'local' ? '本地' : '站点';
+      srcEl.textContent = '站点';
 
       const actions = document.createElement('div');
       actions.className = 'actions';
       const openBtn = document.createElement('button');
       openBtn.className = 'btn btn-secondary';
       openBtn.textContent = '加载';
-      openBtn.onclick = async () => {
-        if (it.type === 'local') {
-          const text = await decodeFile(it.file);
-          loadText(text, it.name);
-        } else {
-          await loadFromUrl(it.path); // 同源直连
-        }
-      };
-      actions.appendChild(openBtn);
+      openBtn.onclick = () => loadFromUrl(it.path); // 同源直连
 
+      actions.appendChild(openBtn);
       li.appendChild(nameEl);
       li.appendChild(srcEl);
       li.appendChild(actions);
       els.fileList.appendChild(li);
     });
   }
+
+  // 页面初始化时加载清单
+  loadManifest();
+  if (els.refreshListBtn) els.refreshListBtn.addEventListener('click', () => loadManifest());
 
   // 将本地选择的多文件加入列表
   function addLocalFiles(files) {
