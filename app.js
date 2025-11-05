@@ -390,7 +390,7 @@
     els.fileList.innerHTML = '';
     const items = state.sameOriginFiles.map(name => ({
       name,
-      path: `./${encodeURI(name)}`
+      path: `./${encodeURIComponent(name)}`
     }));
 
     if (!items.length) {
@@ -418,7 +418,7 @@
       const openBtn = document.createElement('button');
       openBtn.className = 'btn btn-secondary';
       openBtn.textContent = '加载';
-      openBtn.onclick = () => loadFromUrl(it.path); // 同源直连
+      openBtn.onclick = () => loadFromUrl(it.path);
 
       actions.appendChild(openBtn);
       li.appendChild(nameEl);
