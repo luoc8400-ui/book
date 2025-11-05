@@ -1,0 +1,10 @@
+{
+  "name": "TXT 小说自动朗读",
+  "short_name": "小说朗读",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "lang": "zh-CN",
+  "background_color": "#ffffff",
+  "theme_color": "#222222",
+  "icons": []
+}
