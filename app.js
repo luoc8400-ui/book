@@ -21,7 +21,8 @@
     resumeStartBtn: document.getElementById('resumeStartBtn'),
     restartStartBtn: document.getElementById('restartStartBtn'),
     fileList: document.getElementById('fileList'),
-    refreshListBtn: document.getElementById('refreshListBtn')
+    refreshListBtn: document.getElementById('refreshListBtn'),
+    loadAllBtn: document.getElementById('loadAllBtn') // 新增：加载全部
   };
 
   const state = {
@@ -35,8 +36,8 @@
     rate: 1.0, pitch: 1.0, volume: 1.0,
     playing: false,
     speakingLock: false,
-    sameOriginFiles: [],   // 新增：初始化同源列表
-    localFiles: []         // 新增：初始化本地选择列表
+    sameOriginFiles: [],     // 新增：同源 TXT 列表初始化
+    localFiles: []           // 新增：初始化本地选择列表
   };
 
   const progressKey = () => state.fileName ? `reader-progress:${state.fileName}` : null;
@@ -71,6 +72,7 @@
     window.speechSynthesis.onvoiceschanged = () => populateVoices(true);
   }
 
+  // 智能解码：优先无替换符的结果，兼容 gb18030/gbk/big5/utf-16
   function decodeBuffer(buf) {
     const u8 = new Uint8Array(buf);
     const bomEncoding = (() => {
@@ -79,23 +81,18 @@
       if (u8[0] === 0xFE && u8[1] === 0xFF) return 'utf-16be';
       return null;
     })();
-
-    const tryDecode = (label) => {
-      try { return new TextDecoder(label).decode(buf); } catch { return null; }
-    };
+    const tryDecode = (label) => { try { return new TextDecoder(label).decode(buf); } catch { return null; } };
     const score = (s) => {
       if (!s) return -Infinity;
-      const bad = (s.match(/\uFFFD/g) || []).length;                 // � 替换符
-      const han = (s.match(/[\u4E00-\u9FFF]/g) || []).length;        // 汉字
-      const punct = (s.match(/[。！？；：、，—…“”‘’]/g) || []).length; // 中文标点
+      const bad = (s.match(/\uFFFD/g) || []).length;
+      const han = (s.match(/[\u4E00-\u9FFF]/g) || []).length;
+      const punct = (s.match(/[。！？；：、，—…“”‘’]/g) || []).length;
       return han * 2 + punct - bad * 5;
     };
-
     if (bomEncoding) {
       const byBom = tryDecode(bomEncoding);
       if (byBom) return byBom;
     }
-
     const candidates = [
       tryDecode('utf-8'),
       tryDecode('gb18030'),
@@ -105,18 +102,16 @@
       tryDecode('utf-16be'),
       new TextDecoder().decode(buf)
     ];
-
     const utf8 = candidates[0];
     if (utf8 && !utf8.includes('\uFFFD')) return utf8;
-
     let best = candidates[0], bestScore = score(candidates[0]);
     for (let i = 1; i < candidates.length; i++) {
-      const s = candidates[i];
-      const sc = score(s);
+      const s = candidates[i], sc = score(s);
       if (sc > bestScore) { best = s; bestScore = sc; }
     }
     return best || new TextDecoder().decode(buf);
   }
+
   async function decodeFile(file) {
     const buf = await file.arrayBuffer();
     return decodeBuffer(buf);
@@ -410,7 +405,14 @@
       const res = await fetch('./files.json', { cache: 'no-cache' });
       if (!res.ok) throw new Error('manifest not found');
       const files = await res.json();
-      state.sameOriginFiles = Array.isArray(files) ? files.filter(n => /\.txt$/i.test(n)) : [];
+      state.sameOriginFiles = Array.isArray(files)
+        ? files.filter(n => /\.txt$/i.test(n))
+                .sort((a, b) => {
+                  const na = parseInt((a.match(/\d+/) || ['0'])[0], 10);
+                  const nb = parseInt((b.match(/\d+/) || ['0'])[0], 10);
+                  return (na - nb) || a.localeCompare(b);
+                })
+        : [];
       renderFileList();
       setStatus(`已加载站点列表，共 ${state.sameOriginFiles.length} 个`);
     } catch (e) {
@@ -418,6 +420,32 @@
       state.sameOriginFiles = [];
       renderFileList();
       setStatus('未找到站点 TXT 列表（files.json）');
+    }
+  }
+
+  // 新增：一键加载全部同源 TXT（拼接后一次朗读）
+  async function loadAllSameOrigin() {
+    if (!state.sameOriginFiles.length) {
+      setStatus('站点列表为空，无法加载全部');
+      return;
+    }
+    try {
+      setStatus('加载全部中...');
+      const names = state.sameOriginFiles.slice();
+      const urls = names.map(n => `./${encodeURIComponent(n)}`);
+      const texts = [];
+      for (const url of urls) {
+        const res = await fetch(url, { cache: 'no-cache' });
+        if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+        const buf = await res.arrayBuffer();
+        texts.push(decodeBuffer(buf));
+      }
+      const merged = texts.map((t, i) => `【${names[i]}】\n` + t).join('\n\n');
+      loadText(merged, '合集.txt');
+      setStatus(`已加载合集（${names.length} 个文件）`);
+    } catch (e) {
+      console.error(e);
+      setStatus('加载全部失败');
     }
   }
 
@@ -467,6 +495,7 @@
   // 页面初始化时加载清单
   loadManifest();
   if (els.refreshListBtn) els.refreshListBtn.addEventListener('click', () => loadManifest());
+  if (els.loadAllBtn) els.loadAllBtn.addEventListener('click', () => loadAllSameOrigin());
 
   // 将本地选择的多文件加入列表
   function addLocalFiles(files) {
