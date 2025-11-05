@@ -16,7 +16,7 @@
     <section class="card">
       <label for="fileInput" class="block-label">选择小说 TXT 文件（本地）</label>
       <!-- 选择小说 TXT 文件（本地） -->
-      <input type="file" id="fileInput" accept=".txt,text/plain" multiple />
+      <input type="file" id="fileInput" accept=".txt,text/plain" multiple style="display:none" />
 
       <label for="urlInput" class="block-label" style="margin-top:10px;">或从网络加载（粘贴 TXT 直链）</label>
       <input type="url" id="urlInput" placeholder="例如：https://raw.githubusercontent.com/你的仓库/帝霸.txt" />
@@ -63,6 +63,7 @@
       <select id="chapterSelect"></select>
     </section>
 
+    <!-- 页面主体结构片段 -->
     <section class="card">
       <label class="block-label">站点目录中的 TXT 文件</label>
       <div class="buttons-row" style="margin-top:8px;">
