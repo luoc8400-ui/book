@@ -26,5 +26,5 @@ html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:
 .list{list-style:none;padding:0;margin:0;max-height:40vh;overflow:auto;}
 .list-item{display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid #eee;}
 .list-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.list-item .src{color:var(--muted);font-size:12px;}
+.list-item .src{color:var(--muted);font-size:12px;margin-left:8px;}
 .list-item .actions{display:flex;gap:8px;}
