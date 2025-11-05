@@ -34,7 +34,9 @@
     voice: null,
     rate: 1.0, pitch: 1.0, volume: 1.0,
     playing: false,
-    speakingLock: false
+    speakingLock: false,
+    sameOriginFiles: [],   // 新增：初始化同源列表
+    localFiles: []         // 新增：初始化本地选择列表
   };
 
   const progressKey = () => state.fileName ? `reader-progress:${state.fileName}` : null;
@@ -70,16 +72,50 @@
   }
 
   function decodeBuffer(buf) {
-    const tryDecode = label => {
+    const u8 = new Uint8Array(buf);
+    const bomEncoding = (() => {
+      if (u8[0] === 0xEF && u8[1] === 0xBB && u8[2] === 0xBF) return 'utf-8';
+      if (u8[0] === 0xFF && u8[1] === 0xFE) return 'utf-16le';
+      if (u8[0] === 0xFE && u8[1] === 0xFF) return 'utf-16be';
+      return null;
+    })();
+
+    const tryDecode = (label) => {
       try { return new TextDecoder(label).decode(buf); } catch { return null; }
     };
-    return (
-      tryDecode('utf-8') ||
-      tryDecode('gb18030') ||
-      tryDecode('gbk') ||
-      tryDecode('big5') ||
+    const score = (s) => {
+      if (!s) return -Infinity;
+      const bad = (s.match(/\uFFFD/g) || []).length;                 // � 替换符
+      const han = (s.match(/[\u4E00-\u9FFF]/g) || []).length;        // 汉字
+      const punct = (s.match(/[。！？；：、，—…“”‘’]/g) || []).length; // 中文标点
+      return han * 2 + punct - bad * 5;
+    };
+
+    if (bomEncoding) {
+      const byBom = tryDecode(bomEncoding);
+      if (byBom) return byBom;
+    }
+
+    const candidates = [
+      tryDecode('utf-8'),
+      tryDecode('gb18030'),
+      tryDecode('gbk'),
+      tryDecode('big5'),
+      tryDecode('utf-16le'),
+      tryDecode('utf-16be'),
       new TextDecoder().decode(buf)
-    );
+    ];
+
+    const utf8 = candidates[0];
+    if (utf8 && !utf8.includes('\uFFFD')) return utf8;
+
+    let best = candidates[0], bestScore = score(candidates[0]);
+    for (let i = 1; i < candidates.length; i++) {
+      const s = candidates[i];
+      const sc = score(s);
+      if (sc > bestScore) { best = s; bestScore = sc; }
+    }
+    return best || new TextDecoder().decode(buf);
   }
   async function decodeFile(file) {
     const buf = await file.arrayBuffer();
