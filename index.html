@@ -65,12 +65,15 @@
 
     <!-- 页面主体结构片段 -->
     <section class="card">
-      <label class="block-label">站点目录中的 TXT 文件</label>
-      <div class="buttons-row" style="margin-top:8px;">
-        <button id="refreshListBtn" class="btn btn-secondary">刷新列表</button>
-      </div>
-      <ul id="fileList" class="list"></ul>
-    </section>
+      <!-- 站点列表卡片：新增“加载全部”按钮 -->
+      <section class="card">
+        <label class="block-label">站点目录中的 TXT 文件</label>
+        <div class="buttons-row" style="margin-top:8px;">
+          <button id="refreshListBtn" class="btn btn-secondary">刷新列表</button>
+          <button id="loadAllBtn" class="btn">加载全部</button>
+        </div>
+        <ul id="fileList" class="list"></ul>
+      </section>
       <div id="textContainer" class="text-container"></div>
     </section>
   </main>
