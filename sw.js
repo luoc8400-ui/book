@@ -23,9 +23,7 @@ self.addEventListener('fetch', (e) => {
   const isTxt = url.pathname.endsWith('.txt');
 
   if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req).catch(() => caches.match('./index.html'))
-    );
+    e.respondWith(fetch(req).catch(() => caches.match('./index.html')));
     return;
   }
 
