@@ -475,7 +475,6 @@
   }
 
   // 新增：统一的安全事件绑定与滑块绑定工具函数
-  // 删除这里的重复 on()/bindSliderSafe() 定义（直接移除那两段函数）
   function on(el, event, handler) {
     if (el && typeof el.addEventListener === 'function') {
       el.addEventListener(event, handler);
@@ -618,3 +617,4 @@
       console.error(e2);
       setStatus('加载失败：链接不可达或代理失败');
     }
+})(); // 正确结束 IIFE
