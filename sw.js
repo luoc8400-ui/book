@@ -1,5 +1,5 @@
 // 顶部：升级缓存版本并预缓存 files.json
-const CACHE = 'reader-cache-v12';
+const CACHE = 'reader-cache-v13';
 const ASSETS = ['.', './index.html', './styles.css', './app.js', './manifest.webmanifest', './files.json'];
 
 self.addEventListener('install', (e) => {
