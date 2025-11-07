@@ -547,6 +547,44 @@
     });
   }
 
+  function fileNameFromUrl(url) {
+    try {
+      const u = new URL(url, window.location.href);
+      const path = u.pathname.split('/').pop() || '远程.txt';
+      return decodeURIComponent(path.split('?')[0] || path);
+    } catch {
+      return '远程.txt';
+    }
+  }
+
+  async function loadFromUrl(url) {
+    try {
+      setStatus('从站点加载中...');
+      const res = await fetch(url, { cache: 'no-cache' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const buf = await res.arrayBuffer();
+      const text = decodeBuffer(buf);
+      loadText(text, fileNameFromUrl(url));
+      localStorage.setItem('reader-last-url', url);
+      return;
+    } catch (e) {
+      console.warn('直链加载失败，尝试代理...', e);
+    }
+    try {
+      setStatus('跨域受限，使用代理加载中...');
+      const proxyUrl = `/functions/proxy?url=${encodeURIComponent(url)}`;
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
+      const buf = await res.arrayBuffer();
+      const text = decodeBuffer(buf);
+      loadText(text, fileNameFromUrl(url));
+      localStorage.setItem('reader-last-url', url);
+    } catch (e2) {
+      console.error(e2);
+      setStatus('加载失败：链接不可达或代理失败');
+    }
+  }
+
   // 页面初始化时加载清单
   loadManifest();
 })(); // 正确结束 IIFE
