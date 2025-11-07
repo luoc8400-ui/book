@@ -221,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderText(sentences, currentIdx) {
-    els.textContainer.innerHTML = '';
+    els.textDisplay.innerHTML = '';
     const frag = document.createDocumentFragment();
     sentences.forEach((s, i) => {
       const span = document.createElement('span');
@@ -234,13 +234,13 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       frag.appendChild(span);
     });
-    els.textContainer.appendChild(frag);
+    els.textDisplay.appendChild(frag);
     highlightCurrent();
   }
   function highlightCurrent() {
-    const nodes = els.textContainer.querySelectorAll('.sentence');
+    const nodes = els.textDisplay.querySelectorAll('.sentence');
     nodes.forEach(n => n.classList.remove('current'));
-    const current = els.textContainer.querySelector(`.sentence[data-idx="${state.currentIndex}"]`);
+    const current = els.textDisplay.querySelector(`.sentence[data-idx="${state.currentIndex}"]`);
     if (current) current.classList.add('current'), current.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   function chunkSentence(text, maxLen = 220) {
