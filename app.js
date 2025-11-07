@@ -442,7 +442,7 @@
 
   // 顶层事件绑定区
   on(els.refreshListBtn, 'click', () => loadManifest());
-  on(els.loadAllBtn, 'click', () => loadAllSameOrigin());
+  on(els.loadAllBtn, 'click', () => loadAllSameOrigin()); // 只保留这一处绑定
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(console.warn);
@@ -467,7 +467,7 @@
     state.sameOriginFiles = (files || []).filter(n => /\.txt$/i.test(n)).sort(sortFn);
     renderFileList();
     setStatus(`已加载站点列表，共 ${state.sameOriginFiles.length} 个`);
-    // 移除自动批量加载，避免阻塞与按钮失效
+    // 移除自动“加载全部”，避免首屏阻塞（删除原来的 autoLoadAll 逻辑）
     if (!state.autoLoadAllDone && state.sameOriginFiles.length) {
       state.autoLoadAllDone = true;
       await loadAllSameOrigin();  // 统一调用已实现的批量加载
@@ -475,6 +475,7 @@
   }
 
   // 新增：统一的安全事件绑定与滑块绑定工具函数
+  // 删除这里的重复 on()/bindSliderSafe() 定义（直接移除那两段函数）
   function on(el, event, handler) {
     if (el && typeof el.addEventListener === 'function') {
       el.addEventListener(event, handler);
@@ -569,12 +570,10 @@
   }
 
   // 安全绑定：将“加载全部”切换为流式加载
-  on(els.loadAllBtn, 'click', () => loadAllSameOriginStreaming());
+  // 移除这句错误绑定：on(els.loadAllBtn, 'click', () => loadAllSameOriginStreaming());
 
-  // 页面初始化时加载清单（只保留一次调用）
+  // 页面初始化时加载清单
   loadManifest();
-  
-  })(); // 正确结束 IIFE，确保其后不再有任何代码
   els.chapterSelect.addEventListener('change', () => {
     const idx = Number(els.chapterSelect.value);
     const targetChar = state.chapters[idx]?.charOffset ?? 0;
@@ -595,7 +594,7 @@
 
   async function loadFromUrl(url) {
     try {
-      setStatus('从网络加载中...');
+      setStatus('从站点加载中...');
       const res = await fetch(url, { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const buf = await res.arrayBuffer();
@@ -604,7 +603,7 @@
       localStorage.setItem('reader-last-url', url);
       return;
     } catch (e) {
-      console.warn('直链加载失败，尝试通过代理...', e);
+      console.warn('直链加载失败，尝试代理...', e);
     }
     try {
       setStatus('跨域受限，使用代理加载中...');
@@ -619,5 +618,3 @@
       console.error(e2);
       setStatus('加载失败：链接不可达或代理失败');
     }
-  }
-
