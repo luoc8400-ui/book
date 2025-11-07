@@ -1,4 +1,4 @@
-(() => {
+document.addEventListener('DOMContentLoaded', () => {
   const els = {
     fileInput: document.getElementById('fileInput'),
     urlInput: document.getElementById('urlInput'),
@@ -36,7 +36,6 @@
     rate: 1.0, pitch: 1.0, volume: 1.0,
     playing: false,
     speakingLock: false,
-    // 新增：同源与本地列表初始化，避免未定义
     sameOriginFiles: [],
     localFiles: [],
     chapterRanges: [],
@@ -588,8 +587,5 @@
     }
   }
 
-  // 页面初始化
-  document.addEventListener('DOMContentLoaded', () => {
-    loadManifest();
-  });
-})(); // 正确结束 IIFE
+  loadManifest();
+});
