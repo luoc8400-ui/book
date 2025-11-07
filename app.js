@@ -588,6 +588,8 @@
     }
   }
 
-  // 页面初始化时加载清单
-  loadManifest();
+  // 页面初始化
+  document.addEventListener('DOMContentLoaded', () => {
+    loadManifest();
+  });
 })(); // 正确结束 IIFE
