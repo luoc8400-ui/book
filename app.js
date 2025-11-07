@@ -467,30 +467,9 @@
     state.sameOriginFiles = (files || []).filter(n => /\.txt$/i.test(n)).sort(sortFn);
     renderFileList();
     setStatus(`已加载站点列表，共 ${state.sameOriginFiles.length} 个`);
-    // 移除自动“加载全部”，避免首屏阻塞（删除原来的 autoLoadAll 逻辑）
-    if (!state.autoLoadAllDone && state.sameOriginFiles.length) {
-      state.autoLoadAllDone = true;
-      await loadAllSameOrigin();  // 统一调用已实现的批量加载
-    }
   }
 
-  // 新增：统一的安全事件绑定与滑块绑定工具函数
-  function on(el, event, handler) {
-    if (el && typeof el.addEventListener === 'function') {
-      el.addEventListener(event, handler);
-    }
-  }
-  function bindSliderSafe(el, labelEl, key) {
-    if (!el || !labelEl) return;
-    el.addEventListener('input', () => {
-      state[key] = Number(el.value);
-      labelEl.textContent = state[key].toFixed(1);
-      if (speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-        updateUIPlaying(false);
-      }
-    });
-  }
+
 
   // 新增：分批加载全部同源 TXT（降低一次性内存与网络压力）
   async function loadAllSameOrigin() {
@@ -568,53 +547,6 @@
     });
   }
 
-  // 安全绑定：将“加载全部”切换为流式加载
-  // 移除这句错误绑定：on(els.loadAllBtn, 'click', () => loadAllSameOriginStreaming());
-
   // 页面初始化时加载清单
   loadManifest();
-  els.chapterSelect.addEventListener('change', () => {
-    const idx = Number(els.chapterSelect.value);
-    const targetChar = state.chapters[idx]?.charOffset ?? 0;
-    state.currentIndex = mapCharOffsetToSentenceIndex(targetChar, state.sentences);
-    highlightCurrent();
-    setStatus(`已跳转到：${state.chapters[idx]?.title || '全文开始'}`);
-  });
-
-  function fileNameFromUrl(url) {
-    try {
-      const u = new URL(url, window.location.href);
-      const path = u.pathname.split('/').pop() || '远程.txt';
-      return decodeURIComponent(path.split('?')[0] || path);
-    } catch {
-      return '远程.txt';
-    }
-  }
-
-  async function loadFromUrl(url) {
-    try {
-      setStatus('从站点加载中...');
-      const res = await fetch(url, { cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const buf = await res.arrayBuffer();
-      const text = decodeBuffer(buf);
-      loadText(text, fileNameFromUrl(url));
-      localStorage.setItem('reader-last-url', url);
-      return;
-    } catch (e) {
-      console.warn('直链加载失败，尝试代理...', e);
-    }
-    try {
-      setStatus('跨域受限，使用代理加载中...');
-      const proxyUrl = `/proxy?url=${encodeURIComponent(url)}`;
-      const res = await fetch(proxyUrl);
-      if (!res.ok) throw new Error(`Proxy HTTP ${res.status}`);
-      const buf = await res.arrayBuffer();
-      const text = decodeBuffer(buf);
-      loadText(text, fileNameFromUrl(url));
-      localStorage.setItem('reader-last-url', url);
-    } catch (e2) {
-      console.error(e2);
-      setStatus('加载失败：链接不可达或代理失败');
-    }
 })(); // 正确结束 IIFE
