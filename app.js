@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     pauseBtn: document.getElementById('pauseBtn'),
     resumeBtn: document.getElementById('resumeBtn'),
     stopBtn: document.getElementById('stopBtn'),
-    textContainer: document.getElementById('textContainer'),
+    textDisplay: document.getElementById('text-display'),
     chapterSelect: document.getElementById('chapterSelect'),
     status: document.getElementById('status'),
     resumePrompt: document.getElementById('resumePrompt'),
